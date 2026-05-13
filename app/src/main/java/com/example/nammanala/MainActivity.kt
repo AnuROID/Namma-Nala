@@ -6,16 +6,20 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nammanala.ui.MainScreen
+import com.example.nammanala.ui.screen.LoginScreen
 import com.example.nammanala.ui.screen.MapScreen
 import com.example.nammanala.ui.screen.MaintenanceScreen
+import com.example.nammanala.ui.screen.SignupScreen
 import com.example.nammanala.ui.screen.WaterLevelScreen
 import com.example.nammanala.ui.screen.WaterStatusScreen
+import com.example.nammanala.viewmodel.AuthViewModel
 import com.example.nammanala.viewmodel.ReportViewModel
 import com.example.nammanala.viewmodel.WaterStatusViewModel
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -24,7 +28,18 @@ class MainActivity : ComponentActivity() {
 
             val waterVm: WaterStatusViewModel = viewModel()
 
-            // 🔥 Screen states
+            val authVm: AuthViewModel = viewModel()
+
+            // Auth States
+            var showSignup by remember {
+                mutableStateOf(false)
+            }
+
+            var isLoggedIn by remember {
+                mutableStateOf(authVm.isUserLoggedIn())
+            }
+
+            // Screen States
             var showMap by remember {
                 mutableStateOf(false)
             }
@@ -41,7 +56,7 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(false)
             }
 
-            // 🔥 Fetch data initially
+            // Initial Fetch
             LaunchedEffect(Unit) {
 
                 reportVm.fetchData()
@@ -49,25 +64,66 @@ class MainActivity : ComponentActivity() {
                 waterVm.fetchStatus()
             }
 
-            // 🗺️ MAP SCREEN
+            // AUTH FLOW
+            if (!isLoggedIn) {
 
+                if (showSignup) {
 
+                    SignupScreen(
 
-            if (showMap) {
+                        authVm = authVm,
+
+                        onOpenLogin = {
+
+                            showSignup = false
+                        },
+
+                        onSignupSuccess = {
+
+                            isLoggedIn = true
+                        }
+                    )
+
+                } else {
+
+                    LoginScreen(
+
+                        authVm = authVm,
+
+                        onOpenSignup = {
+
+                            showSignup = true
+                        },
+
+                        onLoginSuccess = {
+
+                            isLoggedIn = true
+                        }
+                    )
+                }
+            }
+
+            // MAP SCREEN
+            else if (showMap) {
 
                 MapScreen(
+
                     reports = reportVm.reports.value,
+
                     onBack = {
+
                         showMap = false
                     }
                 )
             }
 
-            // 💧 WATER STATUS SCREEN
+            // WATER STATUS SCREEN
             else if (showWaterStatus) {
 
                 WaterStatusScreen(
+
                     onBack = {
+
                         showWaterStatus = false
                     },
 
@@ -78,35 +134,47 @@ class MainActivity : ComponentActivity() {
 
                         waterVm.addStatus(village)
                     }
-
                 )
-
             }
 
-            // 🛠️ MAINTENANCE SCREEN
+            // MAINTENANCE SCREEN
             else if (showMaintenance) {
 
-                MaintenanceScreen(onBack = {
-                    showMaintenance = false
-                })
+                MaintenanceScreen(
+
+                    onBack = {
+
+                        showMaintenance = false
+                    }
+                )
             }
 
-            // 🌊 WATER LEVEL SCREEN
+            // WATER LEVEL SCREEN
             else if (showWaterLevel) {
 
-                WaterLevelScreen( onBack = {
-                    showWaterLevel = false
-                })
+                WaterLevelScreen(
+
+                    onBack = {
+
+                        showWaterLevel = false
+                    }
+                )
             }
 
-            // 🏠 MAIN SCREEN
+            // MAIN SCREEN
             else {
 
                 MainScreen(
 
-                    reports = reportVm.reports.value,
+                    authVm = authVm,
 
+                    reports = reportVm.reports.value,
+                    onLogout = {
+
+                        isLoggedIn = false
+                    },
                     onFetchClick = {
+
                         reportVm.fetchData()
                     },
 
@@ -125,21 +193,24 @@ class MainActivity : ComponentActivity() {
                     },
 
                     onOpenMap = {
+
                         showMap = true
                     },
 
                     onOpenWaterStatus = {
+
                         showWaterStatus = true
                     },
 
                     onOpenMaintenance = {
+
                         showMaintenance = true
                     },
 
                     onOpenWaterLevel = {
+
                         showWaterLevel = true
                     }
-
                 )
             }
         }
